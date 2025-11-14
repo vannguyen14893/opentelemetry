@@ -1,0 +1,27 @@
+server:
+  port: 8089
+logging:
+  level:
+    com.example: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  tracing:
+    sampling:
+      probability: 1.0
+    baggage:
+      enabled: false
+    propagation:
+      type: w3c
+spring:
+  threads:
+    virtual:
+      enabled: true
+grpc:
+  server:
+    port: 9090
+
