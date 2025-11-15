@@ -1,4 +1,4 @@
-package com.demo.service.a;
+package com.demo.service.a.config;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;

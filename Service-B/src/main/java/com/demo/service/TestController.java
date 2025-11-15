@@ -17,17 +17,11 @@ import com.demo.grpc.proto.SimpleGrpc;
  */
 @RestController
 public class TestController {
-    private static final Logger log = LoggerFactory.getLogger(TestController.class);
-    @Autowired
-    private Tracer tracer;
     @GrpcClient("hello")
     private SimpleGrpc.SimpleBlockingStub simpleBlobServiceBlockingStub;
     @GetMapping("/service-b")
     public ResponseEntity<String> testResponseJson() {
-        HelloRequest request = HelloRequest.newBuilder()
-                .setName("ndvan123")
-                .build();
-        //HelloReply helloReply = simpleBlobServiceBlockingStub.sayHello(request);
+
         String jsonResponse = "{\n" +
                 "  \"welcome\": \"Welcome to our application!\",\n" +
                 "  \"buttons\": {\n" +
@@ -39,5 +33,13 @@ public class TestController {
                 "  }\n" +
                 "}";
         return ResponseEntity.ok(jsonResponse);
+    }
+    @GetMapping("/send-grpc")
+    public ResponseEntity<String> sendGrpc() {
+        HelloRequest request = HelloRequest.newBuilder()
+                .setName("ndvan123")
+                .build();
+        HelloReply helloReply = simpleBlobServiceBlockingStub.sayHello(request);
+        return ResponseEntity.ok(helloReply.getMessage());
     }
 }

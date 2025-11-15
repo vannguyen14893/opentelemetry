@@ -1,4 +1,4 @@
-package com.demo.service.a;
+package com.demo.service.a.config;
 
 import io.opentelemetry.api.OpenTelemetry;
 import lombok.RequiredArgsConstructor;

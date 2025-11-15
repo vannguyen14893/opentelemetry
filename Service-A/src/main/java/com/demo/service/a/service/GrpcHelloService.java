@@ -1,4 +1,4 @@
-package com.demo.service.a;
+package com.demo.service.a.service;
 
 import com.demo.grpc.proto.HelloReply;
 import com.demo.grpc.proto.HelloRequest;

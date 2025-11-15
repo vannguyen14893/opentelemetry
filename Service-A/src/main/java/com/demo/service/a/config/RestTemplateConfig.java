@@ -1,4 +1,4 @@
-package com.demo.service.a;
+package com.demo.service.a.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;

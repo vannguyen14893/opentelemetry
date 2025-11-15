@@ -1,7 +1,6 @@
-package com.demo.service.a;
+package com.demo.service.a.service;
 
 import io.micrometer.tracing.Span;
-import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.Tracer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

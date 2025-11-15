@@ -2,7 +2,10 @@ server:
   port: 8089
 logging:
   level:
-    com.example: INFO
+      com.example: INFO
+      org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+      SQL_TRACE: INFO  # Logger cho SQL tracing
+      io.opentelemetry: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
 management:
@@ -21,6 +24,23 @@ spring:
   threads:
     virtual:
       enabled: true
+  datasource:
+      url: jdbc:postgresql://localhost:5432/test
+      username: admin
+      password: 123456A@
+      driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 10000
+          optimize_batch_fetch_size: 5000
+  kafka:
+    bootstrap-servers: localhost:29092
 grpc:
   server:
     port: 9090

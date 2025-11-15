@@ -26,3 +26,47 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: test
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456A@
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  service-a:
+    image: service-a:latest
+    container_name: service-a
+    depends_on:
+      - postgres
+      - kafka
+    ports:
+      - "8089:8089"
+      - "9090:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/test
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123456A@
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    restart: unless-stopped
+
+  service-b:
+    image: service-b:latest
+    container_name: service-b
+    depends_on:
+      - service-a
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      GRPC_CLIENT_HELLO_ADDRESS: service-a:9090
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
