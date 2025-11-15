@@ -28,13 +28,13 @@ public class ExternalService {
     /**
      * Gọi API bên ngoài - Trace ID sẽ tự động được thêm vào header
      */
-    public Map<String, Object> callExternalApi(String url) {
+    public String callExternalApi(String url) {
         String traceId = getCurrentTraceId();
 
         log.info("Calling external API: {} with TraceId: {}", url, traceId);
 
         try {
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
             log.info("External API responded - TraceId: {}, Status: {}",
                     traceId, response.getStatusCode());
@@ -79,25 +79,7 @@ public class ExternalService {
         }
     }
 
-    /**
-     * Gọi nhiều API liên tiếp (chain) - tất cả sẽ có cùng trace ID
-     */
-    public Map<String, Object> callMultipleApis(String url1, String url2) {
-        String traceId = getCurrentTraceId();
 
-        log.info("Starting multiple API calls with TraceId: {}", traceId);
-
-        Map<String, Object> result1 = callExternalApi(url1);
-        Map<String, Object> result2 = callExternalApi(url2);
-
-        log.info("Completed multiple API calls with TraceId: {}", traceId);
-
-        return Map.of(
-                "traceId", traceId,
-                "result1", result1,
-                "result2", result2
-        );
-    }
 
     private String getCurrentTraceId() {
         return tracer.currentSpan() != null

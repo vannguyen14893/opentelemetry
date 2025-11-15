@@ -26,18 +26,8 @@ public class TestController {
 
     @GetMapping("/internal/response/json")
     public ResponseEntity<String> testResponseJson() {
-        Map<String, Object> externalResult = externalService.callExternalApi("http://localhost:8081/internal/response/json");
-        String jsonResponse = "{\n" +
-                "  \"welcome\": \"Welcome to our application!\",\n" +
-                "  \"buttons\": {\n" +
-                "    \"submit\": \"Submit\",\n" +
-                "    \"cancel\": \"Cancel\"\n" +
-                "  },\n" +
-                "  \"login\": {\n" +
-                "    \"button\": \"Login\"\n" +
-                "  }\n" +
-                "}";
-        return ResponseEntity.ok(jsonResponse);
+        String externalResult = externalService.callExternalApi("http://localhost:8081/service-b");
+        return ResponseEntity.ok(externalResult);
     }
 
     @GetMapping("/send-message")

@@ -22,21 +22,12 @@ public class TestController {
     private Tracer tracer;
     @GrpcClient("hello")
     private SimpleGrpc.SimpleBlockingStub simpleBlobServiceBlockingStub;
-    @GetMapping("/internal/response/json")
+    @GetMapping("/service-b")
     public ResponseEntity<String> testResponseJson() {
         HelloRequest request = HelloRequest.newBuilder()
                 .setName("ndvan123")
                 .build();
-        HelloReply helloReply = simpleBlobServiceBlockingStub.sayHello(request);
-        String traceId = tracer.currentSpan() != null
-                ? tracer.currentSpan().context().traceId()
-                : "no-trace-id";
-
-        String spanId = tracer.currentSpan() != null
-                ? tracer.currentSpan().context().spanId()
-                : "no-span-id";
-
-        log.info("Processing /hello request - TraceId: {}, SpanId: {}", traceId, spanId);
+        //HelloReply helloReply = simpleBlobServiceBlockingStub.sayHello(request);
         String jsonResponse = "{\n" +
                 "  \"welcome\": \"Welcome to our application!\",\n" +
                 "  \"buttons\": {\n" +
@@ -47,6 +38,6 @@ public class TestController {
                 "    \"button\": \"Login\"\n" +
                 "  }\n" +
                 "}";
-        return ResponseEntity.ok(helloReply.getMessage());
+        return ResponseEntity.ok(jsonResponse);
     }
 }
