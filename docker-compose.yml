@@ -46,6 +46,7 @@ services:
     depends_on:
       - postgres
       - kafka
+      - zipkin
     ports:
       - "8089:8089"
       - "9090:9090"
@@ -54,6 +55,7 @@ services:
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456A@
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
     restart: unless-stopped
 
   service-b:
@@ -61,12 +63,20 @@ services:
     container_name: service-b
     depends_on:
       - service-a
+      - zipkin
     ports:
       - "8081:8081"
       - "9091:9091"
     environment:
       GRPC_CLIENT_HELLO_ADDRESS: service-a:9090
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
     restart: unless-stopped
-
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    environment:
+      - JAVA_OPTS=-Xms128m -Xmx128m
 volumes:
   postgres_data:

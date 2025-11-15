@@ -6,9 +6,12 @@ logging:
       org.hibernate.type.descriptor.sql.BasicBinder: TRACE
       SQL_TRACE: INFO  # Logger cho SQL tracing
       io.opentelemetry: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
+#  pattern:
+#    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
 management:
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
   endpoints:
     web:
       exposure:
@@ -41,6 +44,9 @@ spring:
           optimize_batch_fetch_size: 5000
   kafka:
     bootstrap-servers: localhost:29092
+  application:
+      name: service-a
+      version: 1.0.0
 grpc:
   server:
     port: 9090
