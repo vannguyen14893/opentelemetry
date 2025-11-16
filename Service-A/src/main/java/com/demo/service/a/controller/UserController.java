@@ -4,6 +4,9 @@ import com.demo.service.a.entity.User;
 import com.demo.service.a.service.ExternalService;
 import com.demo.service.a.service.MessageProducerService;
 import com.demo.service.a.service.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.api.trace.Span;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,8 +34,11 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        log.info("User to be created: {}", user);
+    public ResponseEntity<User> createUser(@RequestBody User user) throws JsonProcessingException {
+        Span span = Span.current();
+        ObjectMapper objectMapper =new ObjectMapper();
+        String value = objectMapper.writeValueAsString(user);
+        span.setAttribute("http.request.body", value);
         User savedUser = userService.create(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }

@@ -15,6 +15,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
@@ -70,9 +71,11 @@ public class OpenTelemetryConfig {
                 .setMaxQueueSize(2048)
                 .setExporterTimeout(30000, TimeUnit.MILLISECONDS)
                 .build();
+        SpanProcessor sensitiveDataProcessor = new SensitiveDataSpanProcessor();
 
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
                 .setSampler(Sampler.alwaysOn())
+                .addSpanProcessor(sensitiveDataProcessor)
                 .addSpanProcessor(SimpleSpanProcessor.create(loggingExporter))
                 .addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
                         .setEndpoint(zipkinEndPoint)

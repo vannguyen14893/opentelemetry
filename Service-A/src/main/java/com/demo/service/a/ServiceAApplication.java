@@ -24,10 +24,11 @@ public class ServiceAApplication {
     @PostConstruct
     public void init() {
         List<User> users =new ArrayList();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             User user = new User();
             user.setName("User" + i);
             user.setEmail("user" + UUID.randomUUID()+ i + "@example.com");
+            user.setPassword("password" + UUID.randomUUID());
             users.add(user);
         }
         userRepository.saveAll(users);
