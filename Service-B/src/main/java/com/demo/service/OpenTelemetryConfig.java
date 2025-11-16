@@ -5,6 +5,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
@@ -24,7 +25,8 @@ public class OpenTelemetryConfig {
     private String version;
     @Value("${management.zipkin.tracing.endpoint}")
     private String zipkinEndPoint;
-
+    @Value("${management.jaeger.tracing.endpoint}")
+    private String jaegerUrl;
     /**
      * Tạo OpenTelemetry instance với NoOp exporter
      * Chỉ tạo trace ID mà không export đi đâu cả
@@ -36,6 +38,8 @@ public class OpenTelemetryConfig {
                 .addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
                         .setEndpoint(zipkinEndPoint)
                         .build()).build())
+                .addSpanProcessor(BatchSpanProcessor.builder(JaegerGrpcSpanExporter.builder()
+                        .setEndpoint(jaegerUrl).build()).build())
                 .setSampler(Sampler.alwaysOn())
                 .build();
 

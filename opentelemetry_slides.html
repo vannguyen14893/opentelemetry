@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giới thiệu OpenTelemetry</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide {
+            background: white;
+            width: 90%;
+            max-width: 1400px;
+            height: 95vh;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px;
+            padding-bottom: 100px;
+            display: none;
+            flex-direction: column;
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+            overflow-y: auto;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 3.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 30px;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            color: #764ba2;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        p, li {
+            font-size: 1.3em;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        ul {
+            margin-left: 40px;
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Architecture Diagram */
+        .architecture-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .arch-layer {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        /* Components Grid */
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .component-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .component-card h4 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .component-card p {
+            font-size: 1em;
+            color: #f0f0f0;
+        }
+
+        /* Use Case Boxes */
+        .use-case-box {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        /* Signal Types */
+        .signal-types {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+        }
+
+        .signal-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .signal-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        /* Highlight */
+        .highlight {
+            background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+
+        /* Navigation */
+        .navigation {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1200;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Slide Number */
+        .slide-number {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .slide {
+                padding: 40px;
+                padding-bottom: 90px;
+                height: 90vh;
+            }
+
+            h1 {
+                font-size: 3em;
+            }
+
+            h2 {
+                font-size: 2.2em;
+            }
+
+            .navigation {
+                bottom: 25px;
+                right: 25px;
+                gap: 12px;
+            }
+
+            button {
+                padding: 11px 28px;
+                font-size: 1.05em;
+            }
+
+            .slide-number {
+                bottom: 25px;
+                left: 25px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                width: 95%;
+                padding: 30px 20px;
+                padding-bottom: 80px;
+                height: 95vh;
+                border-radius: 15px;
+            }
+
+            h1 {
+                font-size: 2.5em;
+            }
+
+            h2 {
+                font-size: 2em;
+                margin-bottom: 20px;
+            }
+
+            h3 {
+                font-size: 1.5em;
+                margin-top: 20px;
+            }
+
+            p, li {
+                font-size: 1.1em;
+                line-height: 1.6;
+            }
+
+            .subtitle {
+                font-size: 1.2em;
+            }
+
+            .components-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .component-card {
+                padding: 20px;
+            }
+
+            .signal-types {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .signal-item {
+                flex: none;
+            }
+
+            .navigation {
+                bottom: 20px;
+                right: 20px;
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px 25px;
+                font-size: 1em;
+            }
+
+            .slide-number {
+                bottom: 20px;
+                left: 20px;
+                font-size: 1em;
+            }
+
+            ul {
+                margin-left: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slide {
+                width: 100%;
+                padding: 60px 15px 80px 15px;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+                border-bottom-width: 3px;
+            }
+
+            h3 {
+                font-size: 1.3em;
+                margin-top: 15px;
+                margin-bottom: 10px;
+            }
+
+            p, li {
+                font-size: 1em;
+                line-height: 1.5;
+                margin-bottom: 10px;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+
+            .components-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .component-card {
+                padding: 15px;
+            }
+
+            .component-card h4 {
+                font-size: 1.2em;
+            }
+
+            .component-card p {
+                font-size: 0.9em;
+            }
+
+            .signal-icon {
+                font-size: 2.5em;
+            }
+
+            .navigation {
+                position: fixed;
+                bottom: 15px;
+                left: 15px;
+                right: 15px;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .slide-number {
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                bottom: auto;
+                font-size: 0.9em;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 5px 10px;
+                border-radius: 15px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+
+            ul {
+                margin-left: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="slide-container">
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+        <h1>OpenTelemetry</h1>
+        <p class="subtitle">Framework Quan sát Hệ thống Phân tán</p>
+        <div style="text-align: center; margin-top: 80px;">
+            <div style="font-size: 8em; color: #667eea;">📊</div>
+            <p style="font-size: 1.5em; color: #666; margin-top: 30px;">
+                Tiêu chuẩn mở cho Observability
+            </p>
+        </div>
+        <div class="slide-number">1 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()" disabled>← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+
+    <!-- Slide 2: Khái niệm -->
+    <div class="slide">
+        <h2>Khái niệm OpenTelemetry</h2>
+        <p><strong>OpenTelemetry (OTel)</strong>
+            là một framework mã nguồn mở, vendor-neutral để thu thập, xử lý và xuất dữ liệu telemetry từ các ứng dụng và hệ thống (metrics, logs, và traces).
+        </p>
+
+        <h3>🎯 Mục tiêu chính:</h3>
+        <ul>
+            <li>Cung cấp <span class="highlight">một bộ API và SDK chuẩn</span> cho các ngôn ngữ lập trình</li>
+            <li>Thu thập telemetry data: <strong>Traces, Metrics, Logs</strong></li>
+            <li>Độc lập với vendor - tương thích với nhiều backend khác nhau</li>
+            <li>Tích hợp dễ dàng vào ứng dụng hiện tại</li>
+        </ul>
+
+        <h3>💡 Lợi ích:</h3>
+        <ul>
+            <li>Giảm độ phức tạp trong việc triển khai observability</li>
+            <li>Không bị lock-in với một vendor cụ thể</li>
+            <li>Cộng đồng lớn và được hỗ trợ bởi CNCF</li>
+        </ul>
+
+        <div class="slide-number">2 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+
+    <!-- Slide 3: Kiến trúc -->
+    <div class="slide">
+        <h2>Kiến trúc OpenTelemetry</h2>
+        <div class="architecture-diagram">
+            <div class="arch-layer" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                📱 Application / Microservices<br>
+                <small>(Instrumented với OTel SDK)</small>
+            </div>
+            <div style="text-align: center; font-size: 2em; color: #667eea;">↓</div>
+            <div class="arch-layer" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                🔄 OpenTelemetry Collector<br>
+                <small>(Receive, Process, Export)</small>
+            </div>
+            <div style="text-align: center; font-size: 2em; color: #667eea;">↓</div>
+            <div class="arch-layer" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                📊 Backend Systems<br>
+                <small>(Jaeger, Prometheus, Grafana, Elasticsearch...)</small>
+            </div>
+        </div>
+        <div class="slide-number">3 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+    <div class="slide">
+        <h3>Quy trình hoạt động:</h3>
+        <ul>
+            <li><strong>Instrumentation:</strong> Ứng dụng tạo ra telemetry data</li>
+            <li><strong>Collection:</strong> OTel Collector thu thập và xử lý data</li>
+            <li><strong>Export:</strong> Gửi data đến các backend để phân tích</li>
+        </ul>
+        <div class="slide-number">4 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+    <!-- Slide 4: Ba loại tín hiệu -->
+    <div class="slide">
+        <h2>Ba loại Telemetry Signals</h2>
+        <div class="signal-types">
+            <div class="signal-item">
+                <div class="signal-icon">📈</div>
+                <h3>Traces</h3>
+                <p>Theo dõi request qua các services</p>
+                <p style="font-size: 0.9em; color: #666;">Hiểu được luồng xử lý và tìm bottleneck</p>
+            </div>
+            <div class="signal-item">
+                <div class="signal-icon">📊</div>
+                <h3>Metrics</h3>
+                <p>Đo lường hiệu suất hệ thống</p>
+                <p style="font-size: 0.9em; color: #666;">CPU, Memory, Request rate, Latency...</p>
+            </div>
+            <div class="signal-item">
+                <div class="signal-icon">📝</div>
+                <h3>Logs</h3>
+                <p>Ghi lại sự kiện hệ thống</p>
+                <p style="font-size: 0.9em; color: #666;">Thông tin chi tiết về lỗi và hoạt động</p>
+            </div>
+        </div>
+
+        <div style="background: #fff3cd; border-left: 5px solid #ffc107; padding: 20px; border-radius: 5px; margin-top: 30px;">
+            <strong>🔗 Correlation:</strong> OpenTelemetry cho phép kết nối các signals với nhau thông qua <strong>Trace Context</strong>, giúp debug hiệu quả hơn.
+        </div>
+
+        <div class="slide-number">5 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+
+    <!-- Slide 5: Thành phần chính -->
+    <div class="slide">
+        <h2>Thành phần chính của OpenTelemetry</h2>
+        <div class="components-grid">
+            <div class="component-card">
+                <h4>🔧 API</h4>
+                <p>Interface chuẩn để tạo telemetry data</p>
+            </div>
+            <div class="component-card">
+                <h4>📦 SDK</h4>
+                <p>Implementation của API cho từng ngôn ngữ</p>
+            </div>
+            <div class="component-card">
+                <h4>🔌 Instrumentation</h4>
+                <p>Tự động thu thập data từ libraries/frameworks</p>
+            </div>
+            <div class="component-card">
+                <h4>🚀 Collector</h4>
+                <p>Agent độc lập để nhận, xử lý và xuất data</p>
+            </div>
+            <div class="component-card">
+                <h4>📤 Exporters</h4>
+                <p>Gửi data đến backends (Jaeger, Prometheus...)</p>
+            </div>
+            <div class="component-card">
+                <h4>🔄 Propagators</h4>
+                <p>Truyền context giữa các services</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">Ngôn ngữ được hỗ trợ:</h3>
+        <p>Java, Python, Go, JavaScript/Node.js, .NET, Ruby, PHP, C++, và nhiều hơn nữa...</p>
+
+        <div class="slide-number">6 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+
+    <!-- Slide 6: Cách sử dụng -->
+    <div class="slide">
+        <h2>Cách triển khai OpenTelemetry</h2>
+
+        <h3>1️⃣ Manual Instrumentation</h3>
+        <p>Tự code để tạo spans, metrics trong ứng dụng</p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; font-family: monospace;">
+            <code>tracer.startSpan("operation-name")</code><br>
+            <code>meter.createCounter("request.count")</code>
+        </div>
+
+        <h3>2️⃣ Automatic Instrumentation</h3>
+        <p>Sử dụng libraries có sẵn để tự động capture data từ frameworks phổ biến (Express, Django, Spring...)</p>
+
+        <h3>3️⃣ Triển khai Collector</h3>
+        <ul>
+            <li>Chạy như sidecar container hoặc daemon</li>
+            <li>Cấu hình receivers, processors, exporters</li>
+            <li>Scale theo nhu cầu của hệ thống</li>
+        </ul>
+        <div class="slide-number">7 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+    <div class="slide">
+        <h3>4️⃣ Kết nối với Backend</h3>
+        <p>Cấu hình exporters để gửi data đến Jaeger, Prometheus, Grafana Tempo, hoặc các giải pháp thương mại như Datadog, New Relic...</p>
+
+        <div class="slide-number">8 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()">Tiếp →</button>
+        </div>
+    </div>
+    <!-- Slide 7: Use Cases -->
+    <div class="slide">
+        <h2>Trường hợp sử dụng</h2>
+
+        <div class="use-case-box">
+            <h3>🏗️ Microservices Architecture</h3>
+            <p>Theo dõi requests qua hàng chục/hàng trăm services, xác định service nào gây chậm</p>
+        </div>
+
+        <div class="use-case-box">
+            <h3>🐛 Troubleshooting & Debugging</h3>
+            <p>Tìm root cause của lỗi bằng cách phân tích traces và logs có correlation</p>
+        </div>
+
+        <div class="use-case-box">
+            <h3>📊 Performance Monitoring</h3>
+            <p>Theo dõi latency, throughput, error rate để tối ưu hiệu suất</p>
+        </div>
+
+        <div class="slide-number">9 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()" disabled>Tiếp →</button>
+        </div>
+    </div>
+    <div class="slide">
+        <div class="use-case-box">
+            <h3>🔍 Security & Compliance</h3>
+            <p>Audit logs và tracking để đảm bảo tuân thủ yêu cầu bảo mật</p>
+        </div>
+
+        <div class="use-case-box">
+            <h3>☁️ Cloud-Native Applications</h3>
+            <p>Observability cho Kubernetes, serverless, containers trong môi trường phức tạp</p>
+        </div>
+        <div class="slide-number">10 / 10</div>
+        <div class="navigation">
+            <button onclick="prevSlide()">← Trước</button>
+            <button onclick="nextSlide()" disabled>Tiếp →</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    function showSlide(n) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = n;
+        slides[currentSlide].classList.add('active');
+        updateButtons();
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            showSlide(currentSlide + 1);
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            showSlide(currentSlide - 1);
+        }
+    }
+
+    function updateButtons() {
+        const prevButtons = document.querySelectorAll('.navigation button:first-child');
+        const nextButtons = document.querySelectorAll('.navigation button:last-child');
+
+        prevButtons.forEach(btn => {
+            btn.disabled = currentSlide === 0;
+        });
+
+        nextButtons.forEach(btn => {
+            btn.disabled = currentSlide === slides.length - 1;
+        });
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    updateButtons();
+</script>
+</body>
+</html>
