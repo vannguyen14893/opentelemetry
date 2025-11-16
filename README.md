@@ -9,3 +9,5 @@ http://localhost:8081/send-grpc
 http://localhost:8089/send-message
 4. Test traceId khi call external api
 http://localhost:8089/call-external?url=http://service-b:8081/service-b
+# Bước 3
+Truy cập jaeger ui http://localhost:16686/ để xem thông tin request và traceId
