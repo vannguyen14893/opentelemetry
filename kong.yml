@@ -1,0 +1,168 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: ms-auth-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [auth]
+  - name: ms-baccarat-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [baccarat]
+  - name: ms-game-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [game]
+  - name: ms-hilo-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [hilo]
+  - name: ms-inventory-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [inventory]
+  - name: ms-leaderboard-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [leaderboard]
+  - name: ms-shop-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [shop]
+  - name: ms-user-service
+    url: https://petstore.swagger.io/v2/store/inventory
+    tags: [user]
+
+consumers:
+  - username: jwt-mobile
+    acls:
+      - group: super-admin
+      - group: user
+    tags: [jwt, mobile]
+    jwt_secrets:
+      - key: "mobile-app-issuer"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy1bHc/i3wLyq5sTKyN7g
+          aoCe78bWFD1dFaVdSFzvOlRvrc/VAaX3HQKtBhC09EPiDQU39KTvcAGuM1grRjSB
+          fnWRXOWCR+vsOa8v6MlpJqZPxu18fg+NLZKCXw0nhBt3H3WeSbCtVIYByEQ3hHYE
+          DRFNN/5wb2mQ+l5J4nNxrWoxYf5Y4ooGyoAltlEcj5XqVXN8cmz1t8anCQqZDXTW
+          cZ02bimwoqmk9RUoAH0fOa7NZMA6X7xE1aqgPWD9n/6Gu6Ny5aldlqfSLF8H2Fa2
+          II80VWXf5yAP9KshTwtZto70NhJFqyDsaia8vd0nldP0ovNyS2YYx9Nt7VVyGcbn
+          5wIDAQAB
+          -----END PUBLIC KEY-----
+  - username: anonymous-user
+    acls:
+        - group: anonymous
+routes:
+  - name: ms-inventory-route
+    service: ms-inventory-service
+    paths:
+      - /ms-inventory-service
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: jwt
+        config:
+          anonymous: "anonymous-user"
+  - name: ms-auth-public-route
+    service: ms-auth-service
+    paths: [ "/v1/login" ]
+    methods: [POST]
+    strip_path: false
+    plugins:
+      - name: jwt
+        config:
+          anonymous: "anonymous-user"
+  - name: ms-auth-private-route
+    service: ms-auth-service
+    paths: [ "/ms-auth-service" ]
+    methods: [ POST,GET, PUT, DELETE, UPDATE ]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+  - name: ms-baccarat-route
+    service: ms-baccarat-service
+    paths: [ /ms-baccarat-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+  - name: ms-game-route
+    service: ms-game-service
+    paths: [ /ms-game-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+
+  - name: ms-hilo-route
+    service: ms-hilo-service
+    paths: [ /ms-hilo-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+
+  - name: ms-leaderboard-route
+    service: ms-leaderboard-service
+    paths: [ /ms-leaderboard-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+
+  - name: ms-shop-route
+    service: ms-shop-service
+    paths: [ /ms-shop-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+
+  - name: ms-get-user-route
+    service: ms-user-service
+    paths: [ /ms-user-service ]
+    methods: [POST, GET, PUT, DELETE, UPDATE]
+    strip_path: true
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - user
+          hide_groups_header: false
+
+plugins:
+  - name: cors
+    config:
+      origins: ["http://localhost:3000", "https://example.com"]
+      methods: [GET, POST, PUT, DELETE, OPTIONS]
+      headers: [Accept, Authorization, Content-Type]
+
+  # Enable JWT for all protected services
+  - name: jwt
+    config:
+      claims_to_verify: [exp]
+      key_claim_name: iss
+      secret_is_base64: false
+      run_on_preflight: false
+      header_names: [authorization]

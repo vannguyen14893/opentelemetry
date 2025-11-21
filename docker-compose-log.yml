@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - elk
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+  fluentd:
+    build: fluentd
+    container_name: fluentd
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+      - /var/log:/var/log
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - elk
+
+  api-app:
+    image: node:18-alpine
+    container_name: api-app
+    command: sh -c "while true; do echo '{\"level\":\"info\",\"message\":\"API request processed\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}'; sleep 5; done"
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.api
+        fluentd-async: "true"
+    networks:
+      - elk
+  kong:
+    image: kong:3.8
+    user: root
+    container_name: kong
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.kong
+        fluentd-async: "true"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_LOG_LEVEL: info
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_NGINX_HTTP_LOG_FORMAT: >-
+        my_custom_format '$$remote_addr - $$http_authorization [$$time_local]
+        "$$request" $$status $$body_bytes_sent
+        "$$http_referer" "$$http_user_agent"
+        rt=$$request_time uct="$$upstream_connect_time" uht="$$upstream_header_time" urt="$$upstream_response_time"'
+      KONG_PROXY_ACCESS_LOG: /dev/stdout my_custom_format
+      KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
+      KONG_REAL_IP_HEADER: "X-Forwarded-For"
+      KONG_REAL_IP_RECURSIVE: "on"
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/kong/declarative/kong.yml
+#      - ./custom-nginx.conf:/etc/kong/custom-nginx.conf
+networks:
+  elk:
+    driver: bridge

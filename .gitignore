@@ -5,7 +5,7 @@ gradlew.bat
 #gradle/
 #!gradle/wrapper/gradle-wrapper.jar
 build/
-logs/
+kong/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
