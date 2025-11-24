@@ -4,17 +4,31 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "22181:2181"
-
+    depends_on:
+      - fluentd
+    networks:
+      - elk
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.kafka
     depends_on:
       - zookeeper
+      - fluentd
     ports:
       - "29092:29092"
     environment:
@@ -26,10 +40,16 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-
+    networks:
+      - elk
   postgres:
     image: postgres:15
     container_name: postgres_db
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.postgres
     environment:
       POSTGRES_DB: test
       POSTGRES_USER: admin
@@ -38,16 +58,25 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    depends_on:
+      - fluentd
     restart: unless-stopped
-
+    networks:
+      - elk
   service-a:
     image: service-a:latest
     container_name: service-a
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.service-a
     depends_on:
       - postgres
       - kafka
       - zipkin
       - jaeger
+      - fluentd
     ports:
       - "8089:8089"
       - "9090:9090"
@@ -59,13 +88,22 @@ services:
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_JAEGER_TRACING_ENDPOINT: http://jaeger:14250
     restart: unless-stopped
+    networks:
+      - elk
   service-b:
     image: service-b:latest
     container_name: service-b
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.service-b
+        fluentd-async: "true"
     depends_on:
       - service-a
       - zipkin
       - jaeger
+      - fluentd
     ports:
       - "8081:8081"
       - "9091:9091"
@@ -74,15 +112,34 @@ services:
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_JAEGER_TRACING_ENDPOINT: http://jaeger:14250
     restart: unless-stopped
+    networks:
+      - elk
   zipkin:
     image: openzipkin/zipkin:latest
     container_name: zipkin
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.zipkin
+        fluentd-async: "true"
     ports:
       - "9411:9411"
     environment:
       - JAVA_OPTS=-Xms128m -Xmx128m
+    depends_on:
+      - fluentd
+    networks:
+      - elk
   jaeger:
     image: jaegertracing/all-in-one:1.53
+    container_name: jaeger
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.jaeger
+        fluentd-async: "true"
     ports:
       - "16686:16686"  # UI
       - "14250:14250"  # Model v2 endpoint
@@ -97,10 +154,17 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
       - LOG_LEVEL=debug
     depends_on:
-      - elasticsearch
+      - fluentd
+    networks:
+      - elk
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -110,6 +174,75 @@ services:
       - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+    depends_on:
+      - fluentd
+    networks:
+      - elk
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+      - fluentd
+    networks:
+      - elk
+  fluentd:
+    build: fluentd
+    container_name: fluentd
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+      - /var/log:/var/log
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - elk
+  kong:
+    image: kong:3.8
+    user: root
+    container_name: kong
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.kong
+        fluentd-async: "true"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_LOG_LEVEL: info
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_NGINX_HTTP_LOG_FORMAT: >-
+        my_custom_format '$$remote_addr - [$$time_local]
+        "$$request" $$status $$body_bytes_sent
+        "$$http_referer" "$$http_user_agent"
+        rt=$$request_time uct="$$upstream_connect_time" uht="$$upstream_header_time" urt="$$upstream_response_time"'
+      KONG_PROXY_ACCESS_LOG: /dev/stdout my_custom_format
+      KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
+      KONG_REAL_IP_HEADER: "X-Forwarded-For"
+      KONG_REAL_IP_RECURSIVE: "on"
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/kong/declarative/kong.yml
+    depends_on:
+      - fluentd
+    networks:
+      - elk
 volumes:
   postgres_data:
   elasticsearch_data:
+networks:
+  elk:
+    driver: bridge
