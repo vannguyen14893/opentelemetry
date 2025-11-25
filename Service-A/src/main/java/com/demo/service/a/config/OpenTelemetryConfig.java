@@ -9,7 +9,6 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
-import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
@@ -26,13 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.demo.grpc.proto.SimpleGrpc.SERVICE_NAME;
-import static io.opentelemetry.semconv.ResourceAttributes.DEPLOYMENT_ENVIRONMENT;
-import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
 
 /**
  * Configuration class for setting up OpenTelemetry within the application.
@@ -80,8 +73,12 @@ public class OpenTelemetryConfig {
                 .addSpanProcessor(batchSpanProcessor)
                 .addResource(createResource())
                 .build();
+        // Configure MeterProvider with more attributes for better metrics
         SdkMeterProvider meterProvider = SdkMeterProvider.builder()
-                .addResource(createResource()).build();
+                .addResource(createResource())
+                .build();
+
+        // Build and register the OpenTelemetry SDK
         return OpenTelemetrySdk.builder()
                 .setTracerProvider(tracerProvider)
                 .setMeterProvider(meterProvider)
@@ -89,7 +86,6 @@ public class OpenTelemetryConfig {
                         TextMapPropagator.composite(
                         W3CTraceContextPropagator.getInstance(),
                         W3CBaggagePropagator.getInstance()
-
                 )))
                 .buildAndRegisterGlobal();
     }

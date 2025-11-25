@@ -5,17 +5,17 @@ upstreams:
   - name: service-a-upstream
     algorithm: round-robin
     slots: 1000
-#    healthchecks:
-#      active:
-#        type: http
-#        healthy:
-#          interval: 5
-#          successes: 1
-#        unhealthy:
-#          interval: 5
-#          http_failures: 2
-#        http_path: /health
-#        timeout: 1
+    #    healthchecks:
+    #      active:
+    #        type: http
+    #        healthy:
+    #          interval: 5
+    #          successes: 1
+    #        unhealthy:
+    #          interval: 5
+    #          http_failures: 2
+    #        http_path: /health
+    #        timeout: 1
     targets:
       - target: service-a:8089
         weight: 100
@@ -23,17 +23,17 @@ upstreams:
   - name: service-b-upstream
     algorithm: round-robin
     slots: 1000
-#    healthchecks:
-#      active:
-#        type: http
-#        healthy:
-#          interval: 5
-#          successes: 1
-#        unhealthy:
-#          interval: 5
-#          http_failures: 2
-#        http_path: /health
-#        timeout: 1
+    #    healthchecks:
+    #      active:
+    #        type: http
+    #        healthy:
+    #          interval: 5
+    #          successes: 1
+    #        unhealthy:
+    #          interval: 5
+    #          http_failures: 2
+    #        http_path: /health
+    #        timeout: 1
     targets:
       - target: service-b:8081
         weight: 100
@@ -100,8 +100,6 @@ plugins:
       origins: [ "http://localhost:3000", "https://example.com" ]
       methods: [ GET, POST, PUT, DELETE, OPTIONS ]
       headers: [ Accept, Authorization, Content-Type ]
-
-  # Enable JWT for all protected services
   - name: jwt
     config:
       claims_to_verify: [ exp ]
@@ -111,6 +109,18 @@ plugins:
       header_names: [ authorization ]
   - name: opentelemetry
     config:
-      traces_endpoint: http://host.docker.internal:4318/v1/traces
+      traces_endpoint: http://jaeger:4318/v1/traces
+      batch_span_count: 100
+      batch_flush_delay: 5
+      propagation:
+        default_format: w3c
+        extract:
+          - w3c
+          - b3
+        inject:
+          - w3c
+          - b3
       resource_attributes:
         service.name: kong-gateway
+        service.version: "1.0"
+        deployment.environment: "development"

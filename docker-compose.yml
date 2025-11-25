@@ -145,6 +145,11 @@ services:
       - "14250:14250"  # Model v2 endpoint
       - "4317:4317"    # OTLP gRPC
       - "4318:4318"    # OTLP HTTP
+      - "14268:14268"  # Jaeger HTTP thrift
+      - "14269:14269"  # Admin port
+      - "9412:9411"     # Zipkin-compatible endpoint
+      - "6831:6831/udp" # Jaeger thrift compact (UDP)
+      - "6832:6832/udp"
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
       - ES_SERVER_URLS=http://elasticsearch:9200
@@ -154,22 +159,62 @@ services:
       - ES_NUM_SHARDS=1
       - ES_NUM_REPLICAS=0
       - COLLECTOR_OTLP_ENABLED=true
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_HTTP_ROUTE=/metrics
       - LOG_LEVEL=debug
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+      - PROMETHEUS_QUERY_NAMESPACE=${PROMETHEUS_QUERY_NAMESPACE:-}
+      - PROMETHEUS_QUERY_DURATION_UNIT=${PROMETHEUS_QUERY_DURATION_UNIT:-}
+      - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
+      - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
+      - QUERY_SERVICE_PERFORMANCE_ENABLED=true
+      - QUERY_SERVICE_PERFORMANCE_LATENCY_HISTOGRAM_BUCKETS=.005,.01,.025,.05,.1,.25,.5,1,2.5,5,10
+      - QUERY_SERVICE_PERFORMANCE_LATENCY_HISTOGRAM_PRECISION=0.01
+
     depends_on:
       - fluentd
+      - prometheus
+    volumes:
+      - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
+    command:
+        - "--query.ui-config=/etc/jaeger/jaeger-ui.json"
+        - "--metrics-backend=prometheus"
+        - "--metrics-http-route=/metrics"
     networks:
       - elk
+  otel_collector:
+    networks:
+        - elk
+    image: otel/opentelemetry-collector-contrib:${OTEL_IMAGE_TAG:-0.112.0}
+    volumes:
+      - ./otel-collector-config-connector.yml:/etc/otelcol/otel-collector-config.yml
+    command: --config /etc/otelcol/otel-collector-config.yml
+    depends_on:
+      - jaeger
+    ports:
+      - "8889:8889"
+  microsim:
+      networks:
+        - elk
+      image: yurishkuro/microsim:v0.5.0@sha256:b7ee2dee51d2c9fd94de08a80278cfbf5a144ad0f22efce50f3d3be15cbfa2c7
+      command: "-d 24h -s 500ms"
+      environment:
+        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel_collector:4318
+        - OTEL_EXPORTER_OTLP_INSECURE=true
+      depends_on:
+        - otel_collector
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
-    logging:
-      driver: fluentd
-      options:
-        fluentd-address: localhost:24224
-        tag: docker.elasticsearch
+#    logging:
+#      driver: fluentd
+#      options:
+#        fluentd-address: localhost:24224
+#        tag: docker.elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
+      - ELASTIC_USERNAME=admin01
       - ELASTIC_PASSWORD=123456aA@
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - cluster.routing.allocation.disk.threshold_enabled=false
@@ -179,6 +224,11 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     depends_on:
       - fluentd
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - elk
   kibana:
@@ -262,6 +312,9 @@ services:
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_TRACING_INSTRUMENTATIONS: "all"
+      KONG_TRACING: "on"
+      KONG_TRACING_SAMPLING_RATE: "1.0"
+      KONG_TRACING_TYPE: "opentelemetry"
       KONG_NGINX_HTTP_LOG_FORMAT: >-
         my_custom_format '$$remote_addr - [$$time_local]
         "$$request" $$status $$body_bytes_sent
@@ -280,9 +333,29 @@ services:
       - fluentd
     networks:
       - elk
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9095:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--log.level=debug'    # Bật log debug
+      - '--log.format=json'
+    networks:
+      - elk
+
 volumes:
   postgres_data:
   elasticsearch_data:
+  prometheus_data:
 networks:
   elk:
     driver: bridge

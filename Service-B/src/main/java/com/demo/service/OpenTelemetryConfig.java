@@ -1,13 +1,16 @@
 package com.demo.service;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
@@ -43,12 +46,19 @@ public class OpenTelemetryConfig {
                 .setSampler(Sampler.alwaysOn())
                 .build();
 
+        // Configure MeterProvider with resource attributes for better metrics
+        SdkMeterProvider meterProvider = SdkMeterProvider.builder()
+                .addResource(developmentResource())
+                .build();
+
         return OpenTelemetrySdk.builder()
                 .setTracerProvider(tracerProvider)
-
+                .setMeterProvider(meterProvider)
                 .setPropagators(ContextPropagators.create(
-                        W3CTraceContextPropagator.getInstance()
-                ))
+                        TextMapPropagator.composite(
+                        W3CTraceContextPropagator.getInstance(),
+                        W3CBaggagePropagator.getInstance()
+                )))
                 .buildAndRegisterGlobal();
     }
     private  Resource developmentResource() {

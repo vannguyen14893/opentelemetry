@@ -1,0 +1,11 @@
+{
+  "monitor": {
+    "menuEnabled": true,
+    "servicePerformance": {
+      "menuEnabled": true
+    }
+  },
+  "dependencies": {
+    "menuEnabled": true
+  }
+}

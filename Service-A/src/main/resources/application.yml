@@ -18,7 +18,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   tracing:
     sampling:
       probability: 1.0
@@ -50,6 +50,14 @@ spring:
   application:
       name: service-a
       version: 1.0.0
+opentracing:
+  jaeger:
+    enabled: true
+    const-sampler:
+      decision: true
+    log-spans: true
+    http-sender:
+      url: http://localhost:14268/api/traces
 grpc:
   server:
     port: 9090
