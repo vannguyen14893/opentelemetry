@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -18,10 +19,14 @@ public class ServiceAApplication {
     @Autowired
     private UserRepository userRepository;
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+
+        System.out.println("Default Timezone: " + TimeZone.getDefault().getID());
+
         SpringApplication.run(ServiceAApplication.class, args);
     }
 
-    @PostConstruct
+    //@PostConstruct
     public void init() {
         List<User> users =new ArrayList();
         for (int i = 0; i < 1000; i++) {

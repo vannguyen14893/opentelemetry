@@ -5,17 +5,17 @@ upstreams:
   - name: service-a-upstream
     algorithm: round-robin
     slots: 1000
-    healthchecks:
-      active:
-        type: http
-        healthy:
-          interval: 5
-          successes: 1
-        unhealthy:
-          interval: 5
-          http_failures: 2
-        http_path: /health
-        timeout: 1
+#    healthchecks:
+#      active:
+#        type: http
+#        healthy:
+#          interval: 5
+#          successes: 1
+#        unhealthy:
+#          interval: 5
+#          http_failures: 2
+#        http_path: /health
+#        timeout: 1
     targets:
       - target: service-a:8089
         weight: 100
@@ -23,17 +23,17 @@ upstreams:
   - name: service-b-upstream
     algorithm: round-robin
     slots: 1000
-    healthchecks:
-      active:
-        type: http
-        healthy:
-          interval: 5
-          successes: 1
-        unhealthy:
-          interval: 5
-          http_failures: 2
-        http_path: /health
-        timeout: 1
+#    healthchecks:
+#      active:
+#        type: http
+#        healthy:
+#          interval: 5
+#          successes: 1
+#        unhealthy:
+#          interval: 5
+#          http_failures: 2
+#        http_path: /health
+#        timeout: 1
     targets:
       - target: service-b:8081
         weight: 100
@@ -109,3 +109,8 @@ plugins:
       secret_is_base64: false
       run_on_preflight: false
       header_names: [ authorization ]
+  - name: opentelemetry
+    config:
+      traces_endpoint: http://host.docker.internal:4318/v1/traces
+      resource_attributes:
+        service.name: kong-gateway

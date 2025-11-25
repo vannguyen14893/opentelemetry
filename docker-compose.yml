@@ -148,6 +148,8 @@ services:
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
       - ES_SERVER_URLS=http://elasticsearch:9200
+      - ES_USERNAME=admin01           # Referencing environment variable for username
+      - ES_PASSWORD=123456aA@
       - ES_TAGS_AS_FIELDS_ALL=true
       - ES_NUM_SHARDS=1
       - ES_NUM_REPLICAS=0
@@ -167,7 +169,8 @@ services:
         tag: docker.elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=123456aA@
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - cluster.routing.allocation.disk.threshold_enabled=false
     ports:
@@ -188,6 +191,8 @@ services:
         tag: docker.kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=admin02
+      - ELASTICSEARCH_PASSWORD=123456aA@
     ports:
       - "5601:5601"
     depends_on:
@@ -195,6 +200,40 @@ services:
       - fluentd
     networks:
       - elk
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.15.0
+    container_name: apm-server
+    ports:
+      - "8200:8200"
+    environment:
+      - ELASTIC_APM_SECRET_TOKEN=fzd4MJLyPLSXZ0oUj7-hzPrtxGC8rKHhTbMKO6wVThVcRib8w5r4Jdt00BzAX-UT-shurF0vtQJLeK3qMqRnPA
+    command: >
+      apm-server -e
+        -E apm-server.auth.secret_token=fzd4MJLyPLSXZ0oUj7-hzPrtxGC8rKHhTbMKO6wVThVcRib8w5r4Jdt00BzAX-UT-shurF0vtQJLeK3qMqRnPA
+        -E apm-server.rum.enabled=true
+        -E apm-server.rum.allow_origins=['*']
+        -E setup.kibana.host=host.docker.internal:5601
+        -E setup.kibana.username=admin03
+        -E setup.kibana.password=123456aA@
+        -E setup.template.settings.index.number_of_replicas=0
+        -E apm-server.kibana.enabled=true
+        -E apm-server.kibana.host=kibana:5601
+        -E apm-server.kibana.username=admin03
+        -E apm-server.kibana.password=123456aA@
+        -E output.elasticsearch.hosts=["host.docker.internal:9200"]
+        -E output.elasticsearch.username=admin01
+        -E output.elasticsearch.password=123456aA@
+    depends_on:
+      - elasticsearch
+      - kibana
+    networks:
+      - elk
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8200/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   fluentd:
     build: fluentd
     container_name: fluentd
@@ -222,6 +261,7 @@ services:
       KONG_LOG_LEVEL: info
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_TRACING_INSTRUMENTATIONS: "all"
       KONG_NGINX_HTTP_LOG_FORMAT: >-
         my_custom_format '$$remote_addr - [$$time_local]
         "$$request" $$status $$body_bytes_sent
