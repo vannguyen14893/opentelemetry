@@ -9,6 +9,8 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
@@ -25,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,7 +52,11 @@ public class OpenTelemetryConfig {
     private String zipkinEndPoint;
     @Value("${management.jaeger.tracing.endpoint}")
     private String jaegerUrl;
+    @Value("${management.otlp.tracing.endpoint}")
+    private String otlpEndpoint;
 
+    @Value("${otel.exporter.otlp.protocol:http/protobuf}")
+    private String otlpProtocol;
     @Bean
     public OpenTelemetry openTelemetry() {
         DetailedLoggingSpanExporter loggingExporter = new DetailedLoggingSpanExporter();
@@ -67,6 +74,11 @@ public class OpenTelemetryConfig {
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
                 .setSampler(Sampler.alwaysOn())
                 .addSpanProcessor(SimpleSpanProcessor.create(loggingExporter))
+                .addSpanProcessor(BatchSpanProcessor.builder(otlpSpanExporter())
+                        .setScheduleDelay(Duration.ofSeconds(1))
+                        .setMaxQueueSize(2048)
+                        .setMaxExportBatchSize(512)
+                        .build())
                 .addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
                         .setEndpoint(zipkinEndPoint)
                         .build()).build())
@@ -101,6 +113,28 @@ public class OpenTelemetryConfig {
     private String getEnvironment() {
         String env = System.getenv("DEPLOYMENT_ENVIRONMENT");
         return StringUtils.hasText(env) ? env : "development";
+    }
+    @Bean
+    public OtlpHttpSpanExporter otlpSpanExporter() {
+        // Using HTTP protocol (recommended for most cases)
+        if ("http/protobuf".equals(otlpProtocol)) {
+            return OtlpHttpSpanExporter.builder()
+                    .setEndpoint(otlpEndpoint + "/v1/traces")
+                    .setTimeout(Duration.ofSeconds(10))
+                    .build();
+        } else {
+            // Using gRPC protocol
+            throw new UnsupportedOperationException("Use otlpGrpcSpanExporter for gRPC protocol");
+        }
+    }
+
+
+    @Bean
+    public OtlpGrpcSpanExporter otlpGrpcSpanExporter() {
+        return OtlpGrpcSpanExporter.builder()
+                .setEndpoint(otlpEndpoint)
+                .setTimeout(Duration.ofSeconds(10))
+                .build();
     }
     @Bean
     public Tracer tracer(OpenTelemetry openTelemetry) {

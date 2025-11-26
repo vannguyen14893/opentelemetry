@@ -1,7 +1,7 @@
 global:
   scrape_interval: 15s
 scrape_configs:
-  # Jaeger tracing
+  # Jaeger tracing (scrape Jaeger's /metrics endpoint via service name on Docker network)
   - job_name: 'jaeger'
     static_configs:
       - targets: ['host.docker.internal:14269']
@@ -13,8 +13,8 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets:
-          - 'service-a:8089'
-          - 'service-b:8081'
+          - 'host.docker.internal:8089'
+#          - 'host.docker.internal:8081'
     scrape_interval: 15s
     scrape_timeout: 5s
     honor_labels: true
@@ -22,9 +22,8 @@ scrape_configs:
   # Kong API Gateway
   - job_name: 'kong'
     static_configs:
-      - targets: ['kong:8001']
+      - targets: ['host.docker.internal:8001']
     metrics_path: '/metrics'
     scrape_interval: 15s
     params:
       format: ['prometheus']
-

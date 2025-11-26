@@ -79,8 +79,9 @@ services:
       - fluentd
     ports:
       - "8089:8089"
-      - "9090:9090"
     environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collecto:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/test
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456A@
@@ -108,6 +109,8 @@ services:
       - "8081:8081"
       - "9091:9091"
     environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collecto:4318  # Internal port
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       GRPC_CLIENT_HELLO_ADDRESS: service-a:9090
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_JAEGER_TRACING_ENDPOINT: http://jaeger:14250
@@ -132,77 +135,73 @@ services:
     networks:
       - elk
   jaeger:
-    image: jaegertracing/all-in-one:1.53
-    container_name: jaeger
+      image: jaegertracing/all-in-one:1.52
+      container_name: jaeger
+      logging:
+        driver: fluentd
+        options:
+          fluentd-address: localhost:24224
+          tag: docker.jaeger
+          fluentd-async: "true"
+      ports:
+        - "16686:16686"  # UI
+        - "14250:14250"  # Model v2 endpoint
+        - "4317:4317"    # OTLP gRPC
+        - "4318:4318"    # OTLP HTTP
+        - "14268:14268"  # Jaeger HTTP thrift
+        - "14269:14269"  # Admin port
+        - "6831:6831/udp" # Jaeger thrift compact (UDP)
+        - "6832:6832/udp"
+      environment:
+        - SPAN_STORAGE_TYPE=elasticsearch
+        - ES_SERVER_URLS=http://elasticsearch:9200
+        - ES_USERNAME=admin01           # Referencing environment variable for username
+        - ES_PASSWORD=123456aA@
+        - ES_TAGS_AS_FIELDS_ALL=true
+        - ES_NUM_SHARDS=1
+        - ES_NUM_REPLICAS=0
+        - COLLECTOR_OTLP_ENABLED=true
+        - METRICS_STORAGE_TYPE=prometheus
+        - PROMETHEUS_HTTP_ROUTE=/metrics
+        - LOG_LEVEL=debug
+        - METRICS_BACKEND=prometheus
+        - PROMETHEUS_SERVER_URL=http://prometheus:9090
+        - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
+        - PROMETHEUS_QUERY_NAMESPACE=span_metrics
+        - PROMETHEUS_QUERY_DURATION_UNIT=ms
+        - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
+        - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
+      depends_on:
+        - fluentd
+        - prometheus
+      volumes:
+        - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
+      command:
+          - "--query.ui-config=/etc/jaeger/jaeger-ui.json"
+      networks:
+        - elk
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: otel-collector
+    command: [ "--config=/etc/otel-collector-config.yml" ]
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4319:4317"   # OTLP gRPC (external:internal)
+      - "4320:4318"   # OTLP HTTP (external:internal)
+      - "8889:8889"   # Prometheus metrics
+    depends_on:
+      - jaeger
+      - prometheus
+      - fluentd
     logging:
       driver: fluentd
       options:
         fluentd-address: localhost:24224
-        tag: docker.jaeger
-        fluentd-async: "true"
-    ports:
-      - "16686:16686"  # UI
-      - "14250:14250"  # Model v2 endpoint
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
-      - "14268:14268"  # Jaeger HTTP thrift
-      - "14269:14269"  # Admin port
-      - "9412:9411"     # Zipkin-compatible endpoint
-      - "6831:6831/udp" # Jaeger thrift compact (UDP)
-      - "6832:6832/udp"
-    environment:
-      - SPAN_STORAGE_TYPE=elasticsearch
-      - ES_SERVER_URLS=http://elasticsearch:9200
-      - ES_USERNAME=admin01           # Referencing environment variable for username
-      - ES_PASSWORD=123456aA@
-      - ES_TAGS_AS_FIELDS_ALL=true
-      - ES_NUM_SHARDS=1
-      - ES_NUM_REPLICAS=0
-      - COLLECTOR_OTLP_ENABLED=true
-      - METRICS_STORAGE_TYPE=prometheus
-      - PROMETHEUS_HTTP_ROUTE=/metrics
-      - LOG_LEVEL=debug
-      - PROMETHEUS_SERVER_URL=http://prometheus:9090
-      - PROMETHEUS_QUERY_NAMESPACE=${PROMETHEUS_QUERY_NAMESPACE:-}
-      - PROMETHEUS_QUERY_DURATION_UNIT=${PROMETHEUS_QUERY_DURATION_UNIT:-}
-      - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
-      - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
-      - QUERY_SERVICE_PERFORMANCE_ENABLED=true
-      - QUERY_SERVICE_PERFORMANCE_LATENCY_HISTOGRAM_BUCKETS=.005,.01,.025,.05,.1,.25,.5,1,2.5,5,10
-      - QUERY_SERVICE_PERFORMANCE_LATENCY_HISTOGRAM_PRECISION=0.01
-
-    depends_on:
-      - fluentd
-      - prometheus
-    volumes:
-      - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
-    command:
-        - "--query.ui-config=/etc/jaeger/jaeger-ui.json"
-        - "--metrics-backend=prometheus"
-        - "--metrics-http-route=/metrics"
+        tag: docker.otel-collector
     networks:
       - elk
-  otel_collector:
-    networks:
-        - elk
-    image: otel/opentelemetry-collector-contrib:${OTEL_IMAGE_TAG:-0.112.0}
-    volumes:
-      - ./otel-collector-config-connector.yml:/etc/otelcol/otel-collector-config.yml
-    command: --config /etc/otelcol/otel-collector-config.yml
-    depends_on:
-      - jaeger
-    ports:
-      - "8889:8889"
-  microsim:
-      networks:
-        - elk
-      image: yurishkuro/microsim:v0.5.0@sha256:b7ee2dee51d2c9fd94de08a80278cfbf5a144ad0f22efce50f3d3be15cbfa2c7
-      command: "-d 24h -s 500ms"
-      environment:
-        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel_collector:4318
-        - OTEL_EXPORTER_OTLP_INSECURE=true
-      depends_on:
-        - otel_collector
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
@@ -334,10 +333,10 @@ services:
     networks:
       - elk
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.6.0@sha256:76947e7ef22f8a698fc638f706685909be425dbe09bd7a2cd7aca849f79b5f64
     container_name: prometheus
     ports:
-      - "9095:9090"
+      - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
