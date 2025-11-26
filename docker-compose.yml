@@ -80,7 +80,7 @@ services:
     ports:
       - "8089:8089"
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collecto:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/test
       SPRING_DATASOURCE_USERNAME: admin
@@ -109,7 +109,7 @@ services:
       - "8081:8081"
       - "9091:9091"
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collecto:4318  # Internal port
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces  # Internal port
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       GRPC_CLIENT_HELLO_ADDRESS: service-a:9090
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
@@ -134,82 +134,76 @@ services:
       - fluentd
     networks:
       - elk
+  #  jaeger:
+  #      image: jaegertracing/all-in-one:1.52
+  #      container_name: jaeger
+  #      logging:
+  #        driver: fluentd
+  #        options:
+  #          fluentd-address: localhost:24224
+  #          tag: docker.jaeger
+  #          fluentd-async: "true"
+  #      ports:
+  #        - "16686:16686"  # UI
+  #        - "14250:14250"  # Model v2 endpoint
+  #        - "4317:4317"    # OTLP gRPC
+  #        - "4318:4318"    # OTLP HTTP
+  #        - "14268:14268"  # Jaeger HTTP thrift
+  #        - "14269:14269"  # Admin port
+  #        - "6831:6831/udp" # Jaeger thrift compact (UDP)
+  #        - "6832:6832/udp"
+  #      environment:
+  #        - SPAN_STORAGE_TYPE=elasticsearch
+  #        - ES_SERVER_URLS=http://elasticsearch:9200
+  #        - ES_USERNAME=admin01           # Referencing environment variable for username
+  #        - ES_PASSWORD=123456aA@
+  #        - ES_TAGS_AS_FIELDS_ALL=true
+  #        - ES_NUM_SHARDS=1
+  #        - ES_NUM_REPLICAS=0
+  #        - COLLECTOR_OTLP_ENABLED=true
+  #        - METRICS_STORAGE_TYPE=prometheus
+  #        - PROMETHEUS_HTTP_ROUTE=/metrics
+  #        - LOG_LEVEL=debug
+  #        - METRICS_BACKEND=prometheus
+  #        - PROMETHEUS_SERVER_URL=http://prometheus:9090
+  #        - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
+  #        - PROMETHEUS_QUERY_NAMESPACE=span_metrics
+  #        - PROMETHEUS_QUERY_DURATION_UNIT=ms
+  #        - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
+  #        - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
+  #      depends_on:
+  #        - fluentd
+  #        - prometheus
+  #      volumes:
+  #        - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
+  #      command:
+  #          - "--query.ui-config=/etc/jaeger/jaeger-ui.json"
+  #      networks:
+  #        - elk
   jaeger:
-      image: jaegertracing/all-in-one:1.52
-      container_name: jaeger
-      logging:
-        driver: fluentd
-        options:
-          fluentd-address: localhost:24224
-          tag: docker.jaeger
-          fluentd-async: "true"
-      ports:
-        - "16686:16686"  # UI
-        - "14250:14250"  # Model v2 endpoint
-        - "4317:4317"    # OTLP gRPC
-        - "4318:4318"    # OTLP HTTP
-        - "14268:14268"  # Jaeger HTTP thrift
-        - "14269:14269"  # Admin port
-        - "6831:6831/udp" # Jaeger thrift compact (UDP)
-        - "6832:6832/udp"
-      environment:
-        - SPAN_STORAGE_TYPE=elasticsearch
-        - ES_SERVER_URLS=http://elasticsearch:9200
-        - ES_USERNAME=admin01           # Referencing environment variable for username
-        - ES_PASSWORD=123456aA@
-        - ES_TAGS_AS_FIELDS_ALL=true
-        - ES_NUM_SHARDS=1
-        - ES_NUM_REPLICAS=0
-        - COLLECTOR_OTLP_ENABLED=true
-        - METRICS_STORAGE_TYPE=prometheus
-        - PROMETHEUS_HTTP_ROUTE=/metrics
-        - LOG_LEVEL=debug
-        - METRICS_BACKEND=prometheus
-        - PROMETHEUS_SERVER_URL=http://prometheus:9090
-        - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
-        - PROMETHEUS_QUERY_NAMESPACE=span_metrics
-        - PROMETHEUS_QUERY_DURATION_UNIT=ms
-        - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
-        - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
-      depends_on:
-        - fluentd
-        - prometheus
-      volumes:
-        - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
-      command:
-          - "--query.ui-config=/etc/jaeger/jaeger-ui.json"
-      networks:
-        - elk
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.91.0
-    container_name: otel-collector
-    command: [ "--config=/etc/otel-collector-config.yml" ]
+    image: jaegertracing/jaeger
+    container_name: jaeger
     volumes:
-      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+      - "./jaeger-ui.json:/etc/jaeger/jaeger-ui.json" # Do we need this for v2 ? Seems to be running without this.
+      - "./config-spm.yaml:/etc/jaeger/config.yml"
+    command: [ "--config", "/etc/jaeger/config.yml" ]
     ports:
-      - "4319:4317"   # OTLP gRPC (external:internal)
-      - "4320:4318"   # OTLP HTTP (external:internal)
-      - "8889:8889"   # Prometheus metrics
-    depends_on:
-      - jaeger
-      - prometheus
-      - fluentd
-    logging:
-      driver: fluentd
-      options:
-        fluentd-address: localhost:24224
-        tag: docker.otel-collector
+      - "16686:16686"
+      - "14269:14269"
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"
+      - "8888:8888"
+      - "8889:8889"
     networks:
       - elk
-
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
-#    logging:
-#      driver: fluentd
-#      options:
-#        fluentd-address: localhost:24224
-#        tag: docker.elasticsearch
+    #    logging:
+    #      driver: fluentd
+    #      options:
+    #        fluentd-address: localhost:24224
+    #        tag: docker.elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true

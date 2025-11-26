@@ -50,8 +50,8 @@ public class OpenTelemetryConfig {
     private String version;
     @Value("${management.zipkin.tracing.endpoint}")
     private String zipkinEndPoint;
-    @Value("${management.jaeger.tracing.endpoint}")
-    private String jaegerUrl;
+//    @Value("${management.jaeger.tracing.endpoint}")
+//    private String jaegerUrl;
     @Value("${management.otlp.tracing.endpoint}")
     private String otlpEndpoint;
 
@@ -60,16 +60,16 @@ public class OpenTelemetryConfig {
     @Bean
     public OpenTelemetry openTelemetry() {
         DetailedLoggingSpanExporter loggingExporter = new DetailedLoggingSpanExporter();
-        SpanExporter jaegerExporter = JaegerGrpcSpanExporter.builder()
-                .setEndpoint(jaegerUrl)
-                .setTimeout(30, TimeUnit.SECONDS)
-                .build();
-        BatchSpanProcessor batchSpanProcessor = BatchSpanProcessor.builder(jaegerExporter)
-                .setScheduleDelay(1000, TimeUnit.MILLISECONDS)
-                .setMaxExportBatchSize(512)
-                .setMaxQueueSize(2048)
-                .setExporterTimeout(30000, TimeUnit.MILLISECONDS)
-                .build();
+//        SpanExporter jaegerExporter = JaegerGrpcSpanExporter.builder()
+//                .setEndpoint(jaegerUrl)
+//                .setTimeout(30, TimeUnit.SECONDS)
+//                .build();
+//        BatchSpanProcessor batchSpanProcessor = BatchSpanProcessor.builder(jaegerExporter)
+//                .setScheduleDelay(1000, TimeUnit.MILLISECONDS)
+//                .setMaxExportBatchSize(512)
+//                .setMaxQueueSize(2048)
+//                .setExporterTimeout(30000, TimeUnit.MILLISECONDS)
+//                .build();
 
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
                 .setSampler(Sampler.alwaysOn())
@@ -82,7 +82,7 @@ public class OpenTelemetryConfig {
                 .addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
                         .setEndpoint(zipkinEndPoint)
                         .build()).build())
-                .addSpanProcessor(batchSpanProcessor)
+                //.addSpanProcessor(batchSpanProcessor)
                 .addResource(createResource())
                 .build();
         // Configure MeterProvider with more attributes for better metrics
