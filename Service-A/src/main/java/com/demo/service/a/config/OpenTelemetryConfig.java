@@ -8,17 +8,14 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
-import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.ServiceAttributes;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +25,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration class for setting up OpenTelemetry within the application.
@@ -48,28 +44,13 @@ public class OpenTelemetryConfig {
     private String serviceName;
     @Value("${spring.application.version}")
     private String version;
-    @Value("${management.zipkin.tracing.endpoint}")
-    private String zipkinEndPoint;
-//    @Value("${management.jaeger.tracing.endpoint}")
-//    private String jaegerUrl;
     @Value("${management.otlp.tracing.endpoint}")
     private String otlpEndpoint;
-
     @Value("${otel.exporter.otlp.protocol:http/protobuf}")
     private String otlpProtocol;
     @Bean
     public OpenTelemetry openTelemetry() {
         DetailedLoggingSpanExporter loggingExporter = new DetailedLoggingSpanExporter();
-//        SpanExporter jaegerExporter = JaegerGrpcSpanExporter.builder()
-//                .setEndpoint(jaegerUrl)
-//                .setTimeout(30, TimeUnit.SECONDS)
-//                .build();
-//        BatchSpanProcessor batchSpanProcessor = BatchSpanProcessor.builder(jaegerExporter)
-//                .setScheduleDelay(1000, TimeUnit.MILLISECONDS)
-//                .setMaxExportBatchSize(512)
-//                .setMaxQueueSize(2048)
-//                .setExporterTimeout(30000, TimeUnit.MILLISECONDS)
-//                .build();
 
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
                 .setSampler(Sampler.alwaysOn())
@@ -79,10 +60,6 @@ public class OpenTelemetryConfig {
                         .setMaxQueueSize(2048)
                         .setMaxExportBatchSize(512)
                         .build())
-                .addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
-                        .setEndpoint(zipkinEndPoint)
-                        .build()).build())
-                //.addSpanProcessor(batchSpanProcessor)
                 .addResource(createResource())
                 .build();
         // Configure MeterProvider with more attributes for better metrics

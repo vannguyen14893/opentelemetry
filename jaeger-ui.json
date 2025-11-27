@@ -1,4 +1,5 @@
 {
+  "archiveEnabled": true,
   "monitor": {
     "menuEnabled": true,
     "servicePerformance": {

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFK Stack Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .layer {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .layer-title {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .components {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .component {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            width: 220px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .component:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .component-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .component-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .component-desc {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            line-height: 1.4;
+        }
+
+        .data-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .arrow {
+            font-size: 2rem;
+            color: #3498db;
+            margin: 0 10px;
+        }
+
+        .flow-line {
+            position: absolute;
+            height: 2px;
+            background: #3498db;
+            width: 80%;
+            top: 50%;
+            z-index: -1;
+        }
+
+        .logs-layer .component {
+            border-top: 4px solid #e74c3c;
+        }
+
+        .collection-layer .component {
+            border-top: 4px solid #3498db;
+        }
+
+        .storage-layer .component {
+            border-top: 4px solid #2ecc71;
+        }
+
+        .visualization-layer .component {
+            border-top: 4px solid #f39c12;
+        }
+
+        .benefits {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .benefits-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .benefit-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .benefit-item h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .components {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .data-flow {
+                flex-direction: column;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+
+            .flow-line {
+                width: 2px;
+                height: 80%;
+                left: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>EFK Stack Architecture</h1>
+        <div class="subtitle">Elasticsearch, Fluentd, Kibana</div>
+        <p class="description">
+            EFK Stack là một nền tảng mã nguồn mở để thu thập, lưu trữ và phân tích log.
+            Kiến trúc này giúp các tổ chức quản lý và phân tích lượng lớn dữ liệu log một cách hiệu quả.
+        </p>
+    </header>
+
+    <div class="architecture">
+        <!-- Data Sources Layer -->
+        <div class="layer logs-layer">
+            <h2 class="layer-title">Nguồn Log</h2>
+            <div class="components">
+                <div class="component">
+                    <div class="component-icon">📱</div>
+                    <div class="component-title">Ứng dụng</div>
+                    <div class="component-desc">Log từ ứng dụng web, mobile, microservices</div>
+                </div>
+                <div class="component">
+                    <div class="component-icon">🖥️</div>
+                    <div class="component-title">Hệ thống</div>
+                    <div class="component-desc">Log từ OS, hệ thống tệp, security events</div>
+                </div>
+                <div class="component">
+                    <div class="component-icon">🌐</div>
+                    <div class="component-title">Mạng</div>
+                    <div class="component-desc">Log từ network devices, firewall, load balancer</div>
+                </div>
+                <div class="component">
+                    <div class="component-icon">📊</div>
+                    <div class="component-title">Cơ sở dữ liệu</div>
+                    <div class="component-desc">Log từ MySQL, PostgreSQL, MongoDB, Redis</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Flow -->
+        <div class="data-flow">
+            <div class="flow-line"></div>
+            <div class="arrow">↓</div>
+        </div>
+
+        <!-- Collection Layer -->
+        <div class="layer collection-layer">
+            <h2 class="layer-title">Thu thập & Xử lý Log</h2>
+            <div class="components">
+                <div class="component">
+                    <div class="component-icon">🔄</div>
+                    <div class="component-title">Fluentd</div>
+                    <div class="component-desc">Công cụ thu thập log mã nguồn mở, xử lý và chuyển đổi dữ liệu log từ nhiều nguồn</div>
+                </div>
+            </div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">Input Plugins</div>
+                    <div class="component-desc">Nhận log từ file, HTTP, TCP, syslog, Docker, Kubernetes</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Filter Plugins</div>
+                    <div class="component-desc">Phân tích cú pháp, làm sạch, chuyển đổi định dạng log</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Output Plugins</div>
+                    <div class="component-desc">Gửi log đã xử lý đến Elasticsearch hoặc các đích đến khác</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Flow -->
+        <div class="data-flow">
+            <div class="flow-line"></div>
+            <div class="arrow">↓</div>
+        </div>
+
+        <!-- Storage Layer -->
+        <div class="layer storage-layer">
+            <h2 class="layer-title">Lưu trữ & Indexing</h2>
+            <div class="components">
+                <div class="component">
+                    <div class="component-icon">📦</div>
+                    <div class="component-title">Elasticsearch</div>
+                    <div class="component-desc">Công cụ tìm kiếm và phân tích phân tán, lưu trữ log được index để tìm kiếm nhanh</div>
+                </div>
+            </div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">Cluster</div>
+                    <div class="component-desc">Kiến trúc phân tán với nhiều node để đảm bảo tính sẵn sàng cao</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Sharding</div>
+                    <div class="component-desc">Chia dữ liệu thành các shard để phân phối tải và tăng hiệu suất</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Replication</div>
+                    <div class="component-desc">Sao chép dữ liệu để đảm bảo độ tin cậy và khả năng phục hồi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Flow -->
+        <div class="data-flow">
+            <div class="flow-line"></div>
+            <div class="arrow">↓</div>
+        </div>
+
+        <!-- Visualization Layer -->
+        <div class="layer visualization-layer">
+            <h2 class="layer-title">Hiển thị & Phân tích</h2>
+            <div class="components">
+                <div class="component">
+                    <div class="component-icon">📈</div>
+                    <div class="component-title">Kibana</div>
+                    <div class="component-desc">Giao diện web để tìm kiếm, visualize và quản lý dữ liệu trong Elasticsearch</div>
+                </div>
+            </div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">Discover</div>
+                    <div class="component-desc">Tìm kiếm và lọc log theo thời gian thực</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Visualize</div>
+                    <div class="component-desc">Tạo biểu đồ, bảng điều khiển từ dữ liệu log</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Dashboard</div>
+                    <div class="component-desc">Tổng hợp nhiều visualization vào một màn hình</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="benefits">
+        <h2 class="benefits-title">Lợi ích của EFK Stack</h2>
+        <div class="benefits-grid">
+            <div class="benefit-item">
+                <h3>Khả năng mở rộng</h3>
+                <p>Kiến trúc phân tán cho phép mở rộng theo chiều ngang để xử lý khối lượng log lớn</p>
+            </div>
+            <div class="benefit-item">
+                <h3>Hiệu suất cao</h3>
+                <p>Tìm kiếm và truy vấn log gần như thời gian thực nhờ Elasticsearch</p>
+            </div>
+            <div class="benefit-item">
+                <h3>Linh hoạt</h3>
+                <p>Hỗ trợ nhiều định dạng log và nguồn dữ liệu khác nhau</p>
+            </div>
+            <div class="benefit-item">
+                <h3>Mã nguồn mở</h3>
+                <p>Giảm chi phí triển khai và bảo trì so với các giải pháp thương mại</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>EFK Stack - Giải pháp quản lý log toàn diện cho doanh nghiệp | © 2023</p>
+    </footer>
+</div>
+</body>
+</html>

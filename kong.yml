@@ -5,17 +5,6 @@ upstreams:
   - name: service-a-upstream
     algorithm: round-robin
     slots: 1000
-    #    healthchecks:
-    #      active:
-    #        type: http
-    #        healthy:
-    #          interval: 5
-    #          successes: 1
-    #        unhealthy:
-    #          interval: 5
-    #          http_failures: 2
-    #        http_path: /health
-    #        timeout: 1
     targets:
       - target: service-a:8089
         weight: 100
@@ -23,17 +12,6 @@ upstreams:
   - name: service-b-upstream
     algorithm: round-robin
     slots: 1000
-    #    healthchecks:
-    #      active:
-    #        type: http
-    #        healthy:
-    #          interval: 5
-    #          successes: 1
-    #        unhealthy:
-    #          interval: 5
-    #          http_failures: 2
-    #        http_path: /health
-    #        timeout: 1
     targets:
       - target: service-b:8081
         weight: 100
@@ -49,6 +27,11 @@ services:
     protocol: http
     port: 8081
     tags: [ service-b ]
+  - name: service-a-grpc
+    host: service-a-upstream
+    protocol: grpc
+    port: 8089
+    tags: [ service-a, grpc ]
 consumers:
   - username: jwt-mobile
     acls:
@@ -89,11 +72,17 @@ routes:
     methods: [ POST,GET, PUT, DELETE, UPDATE ]
     strip_path: true
     plugins:
-      - name: acl
+      - name: jwt
         config:
-          allow:
-            - user
-          hide_groups_header: false
+          anonymous: "anonymous-user"
+  - name: service-a-http-to-grpc
+    service: service-a-grpc
+    protocols:
+        - http
+        - https
+    paths:
+        - "/service-a-grpc"
+    strip_path: true
 plugins:
   - name: cors
     config:
@@ -109,7 +98,7 @@ plugins:
       header_names: [ authorization ]
   - name: opentelemetry
     config:
-      traces_endpoint: http://jaeger:4318/v1/traces
+      traces_endpoint: http://apm-server:8200/v1/traces
       batch_span_count: 100
       batch_flush_delay: 5
       propagation:
@@ -124,3 +113,5 @@ plugins:
         service.name: kong-gateway
         service.version: "1.0"
         deployment.environment: "development"
+      headers:
+        Authorization: "Bearer fzd4MJLyPLSXZ0oUj7-hzPrtxGC8rKHhTbMKO6wVThVcRib8w5r4Jdt00BzAX-UT-shurF0vtQJLeK3qMqRnPA"

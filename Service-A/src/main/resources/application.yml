@@ -9,12 +9,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
 management:
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
-#  jaeger:
-#    tracing:
-#      endpoint: http://localhost:14250
   endpoints:
     web:
       exposure:

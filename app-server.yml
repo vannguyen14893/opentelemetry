@@ -1,0 +1,87 @@
+apm-server:
+  host: "0.0.0.0:8200"
+
+  # Secret token for agent authentication
+  auth:
+    # Allow anonymous access for OpenTelemetry agents
+    anonymous:
+      enabled: true
+      allow_agent: ['otlp', 'opentelemetry', 'opentelemetry/java', 'opentelemetry-java', 'rum-js', 'js-base','rum-js', 'js-base', 'ios', 'android']
+      allow_service: ['*']
+      rate_limit:
+        ip_limit: 1000
+        event_limit: 30000
+    # Optional: Use secret token for additional security
+    # secret_token: "your_secret_token_here"
+
+  # Bật RUM (Real User Monitoring)
+  rum:
+    enabled: true
+    allow_origins: ['*']
+    allow_headers: ["Content-Type", "Content-Encoding", "Accept"]
+    library_pattern: "node_modules|bower_components|~"
+    exclude_from_grouping: "^/webpack"
+    source_mapping:
+      enabled: true
+      cache:
+        expiration: 5m
+
+  # Aggregation settings
+  aggregation:
+    transactions:
+      enabled: true
+      interval: 1m
+    service_destinations:
+      enabled: true
+      interval: 1m
+
+# Output configuration
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  protocol: "http"
+  username: "apm_system"
+  password: "apm_password"
+
+  # Index settings
+  indices:
+    - index: "apm-%{[observer.version]}-sourcemap"
+      when.contains:
+        processor.event: "sourcemap"
+
+    - index: "apm-%{[observer.version]}-error-%{+yyyy.MM.dd}"
+      when.contains:
+        processor.event: "error"
+
+    - index: "apm-%{[observer.version]}-transaction-%{+yyyy.MM.dd}"
+      when.contains:
+        processor.event: "transaction"
+
+    - index: "apm-%{[observer.version]}-span-%{+yyyy.MM.dd}"
+      when.contains:
+        processor.event: "span"
+
+    - index: "apm-%{[observer.version]}-metric-%{+yyyy.MM.dd}"
+      when.contains:
+        processor.event: "metric"
+
+    - index: "apm-%{[observer.version]}-profile-%{+yyyy.MM.dd}"
+      when.contains:
+        processor.event: "profile"
+
+# Kibana configuration
+setup.kibana:
+  host: "http://kibana:5601"
+  username: "apm_system"
+  password: "apm_password"
+
+# Template settings
+setup.template.settings:
+  index:
+    number_of_shards: 1
+    number_of_replicas: 0
+    codec: best_compression
+
+# Logging
+logging.level: info
+logging.to_files: false
+logging.to_stderr: true

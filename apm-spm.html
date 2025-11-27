@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>So sánh APM và SPM</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #f1f8ff;
+        }
+
+        .criteria {
+            font-weight: 600;
+            background-color: #f1f8ff;
+            width: 20%;
+        }
+
+        .apm-col {
+            width: 40%;
+        }
+
+        .spm-col {
+            width: 40%;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        .highlight {
+            background-color: #fff9e6;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 700px;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1> APM và SPM</h1>
+
+<div class="table-container">
+    <table>
+        <thead>
+        <tr>
+            <th class="criteria">Tiêu chí</th>
+            <th class="apm-col">APM (Application Performance Monitoring)</th>
+            <th class="spm-col">SPM (System Performance Monitoring)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td class="criteria">Đối tượng giám sát</td>
+            <td>Ứng dụng, dịch vụ, mã nguồn.<br>
+                <span >Ví dụ:</span> Một ứng dụng web, microservice, API.
+            </td>
+            <td>Hệ thống, máy chủ, hạ tầng.<br>
+                <span >Ví dụ:</span> Server vật lý/vật lý ảo (VM), container, hệ điều hành, mạng.
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Góc nhìn & Mục tiêu</td>
+            <td>Góc nhìn từ bên trong (Inside-out) & từ người dùng.<br>
+                <span >Mục tiêu:</span> Đảm bảo ứng dụng chạy nhanh, ổn định và mang lại trải nghiệm tốt cho người dùng cuối.
+            </td>
+            <td>Góc nhìn từ bên ngoài (Outside-in) & từ hệ thống.<br>
+                <span >Mục tiêu:</span> Đảm bảo hạ tầng (server, network) hoạt động ổn định, không bị quá tải.
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Dữ liệu giám sát</td>
+            <td>
+                <ul>
+                    <li><span >Metrics:</span> Thời gian phản hồi (Response Time), Số lượt giao dịch mỗi giây (Throughput), Tỷ lệ lỗi (Error Rate).</li>
+                    <li><span >Traces:</span> Đường đi của một request xuyên qua các service (Distributed Tracing).</li>
+                    <li><span >Logs:</span> Logs ứng dụng được gom nhóm và phân tích.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li><span >Metrics:</span> Mức sử dụng CPU, RAM, Disk I/O, Network Traffic, Disk Space.</li>
+                    <li><span >Trạng thái:</span> Dịch vụ có đang chạy không? Port có mở không?</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Phạm vi</td>
+            <td>Phạm vi rộng theo chiều ngang (End-to-End).<br>
+                Theo dõi một yêu cầu từ trình duyệt/user, qua load balancer, đến web server, app server, database, và các service bên ngoài.
+            </td>
+            <td>Phạm vi sâu theo chiều dọc (Từng node).<br>
+                Tập trung vào sức khỏe của từng máy chủ, từng node riêng lẻ trong hệ thống.
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Công cụ điển hình</td>
+            <td>
+                <ul>
+                    <li>Dynatrace</li>
+                    <li>New Relic</li>
+                    <li>AppDynamics</li>
+                    <li>Datadog APM</li>
+                    <li class="highlight">Elastic APM</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li class="highlight">Prometheus + Grafana</li>
+                    <li>Zabbix</li>
+                    <li>Nagios</li>
+                    <li>Datadog Infrastructure Monitoring</li>
+                    <li>SolarWinds</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Câu hỏi trả lời</td>
+            <td>
+                <ul>
+                    <li>"Tại sao trang checkout lại mất 10 giây để tải?"</li>
+                    <li>"Lỗi này xảy ra ở service nào trong chuỗi microservices?"</li>
+                    <li>"Phương thức database nào đang gây nghẽn cổ chai?"</li>
+                    <li>"Người dùng có đang gặp lỗi không?"</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>"CPU của server database có sắp đạt 100% không?"</li>
+                    <li>"Ổ cứng còn trống bao nhiêu?"</li>
+                    <li>"Có service nào trên server bị crash không?"</li>
+                    <li>"Băng thông mạng có bị hết không?"</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="criteria">Đối tượng sử dụng</td>
+            <td>Developer, DevOps Engineer, SRE.<br>
+                Những người cần hiểu và tối ưu hóa hiệu năng của code và ứng dụng.
+            </td>
+            <td>System Admin, Network Admin, DevOps Engineer, SRE.<br>
+                Những người chịu trách nhiệm về sự ổn định của hạ tầng.
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
