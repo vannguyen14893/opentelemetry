@@ -2,10 +2,10 @@ server:
   port: 8089
 logging:
   level:
-      com.example: INFO
-      org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-      SQL_TRACE: INFO
-      io.opentelemetry: DEBUG
+    com.example: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    SQL_TRACE: INFO
+    io.opentelemetry: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
 management:
@@ -15,7 +15,7 @@ management:
         include: health,info,metrics,prometheus
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4320}
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:8200}
   endpoint:
     prometheus:
       access: unrestricted
@@ -31,10 +31,10 @@ spring:
     virtual:
       enabled: true
   datasource:
-      url: jdbc:postgresql://localhost:5432/test
-      username: admin
-      password: 123456A@
-      driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/test
+    username: admin
+    password: 123456A@
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -48,8 +48,17 @@ spring:
   kafka:
     bootstrap-servers: localhost:29092
   application:
-      name: service-a
-      version: 1.0.0
+    name: service-a
+    version: 1.0.0
+  data:
+    redis:
+      port: 6379
+      host: localhost
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
 grpc:
   server:
     port: 9092

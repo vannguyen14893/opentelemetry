@@ -1,6 +1,8 @@
 package com.demo.service.a.config;
 
 import com.demo.service.a.service.DetailedLoggingSpanExporter;
+import io.lettuce.core.resource.ClientResources;
+import io.lettuce.core.tracing.Tracing;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.Attributes;
@@ -22,8 +24,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.StringUtils;
-
+import io.opentelemetry.instrumentation.lettuce.v5_1.LettuceTelemetry;
 import java.time.Duration;
 
 /**
@@ -48,6 +56,11 @@ public class OpenTelemetryConfig {
     private String otlpEndpoint;
     @Value("${otel.exporter.otlp.protocol:http/protobuf}")
     private String otlpProtocol;
+    @Value("${spring.data.redis.port}")
+    private int portRedis;
+    @Value("${spring.data.redis.host}")
+
+    private String hostRedis;
     @Bean
     public OpenTelemetry openTelemetry() {
         DetailedLoggingSpanExporter loggingExporter = new DetailedLoggingSpanExporter();
@@ -112,6 +125,45 @@ public class OpenTelemetryConfig {
                 .setEndpoint(otlpEndpoint)
                 .setTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+    @Bean
+    public ClientResources clientResources(OpenTelemetry openTelemetry) {
+        Tracing lettuceTracing = LettuceTelemetry.create(openTelemetry).newTracing();
+        return ClientResources.builder()
+                .tracing(lettuceTracing)
+                .build();
+    }
+
+    @Bean
+    public LettuceConnectionFactory redisConnectionFactory(
+            ClientResources clientResources) {
+
+        LettuceClientConfiguration clientConfig =
+                LettuceClientConfiguration.builder()
+                        .clientResources(clientResources)
+                        .build();
+
+        return new LettuceConnectionFactory(
+                new org.springframework.data.redis.connection.RedisStandaloneConfiguration(
+                        hostRedis, portRedis),
+                clientConfig
+        );
+    }
+
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory connectionFactory) {
+
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        // Serializers
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        return template;
     }
     @Bean
     public Tracer tracer(OpenTelemetry openTelemetry) {

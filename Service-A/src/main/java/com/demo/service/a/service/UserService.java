@@ -12,11 +12,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RedisService redisService;
 
     public List<User> list() {
         return userRepository.findAll(Pageable.ofSize(100)).getContent();
     }
+
     public User create(User user) {
-        return userRepository.save(user);
+        User save = userRepository.save(user);
+        redisService.test(String.valueOf(save.getId()), save.getEmail());
+        return save;
     }
 }

@@ -76,6 +76,7 @@ services:
       - kafka
       - jaeger
       - fluentd
+      - redis
     ports:
       - "8089:8089"
     environment:
@@ -83,6 +84,8 @@ services:
       OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer fzd4MJLyPLSXZ0oUj7-hzPrtxGC8rKHhTbMKO6wVThVcRib8w5r4Jdt00BzAX-UT-shurF0vtQJLeK3qMqRnPA"
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: oltp
+      SPRING_DATA_REDIS_HOST: host.docker.internal
+      SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/test
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456A@
@@ -297,10 +300,19 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - elk
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis-data:/data
 volumes:
   postgres_data:
   elasticsearch_data:
   prometheus_data:
+  redis-data:
 networks:
   elk:
     driver: bridge
